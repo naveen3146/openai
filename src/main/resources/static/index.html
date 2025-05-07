@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ChatGPT UI</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+<div class="bg-white shadow-lg rounded-lg w-full max-w-xl flex flex-col h-[80vh]">
+  <div class="p-4 border-b text-2xl font-bold text-blue-600 flex items-center">
+    <svg class="w-8 h-8 mr-2 text-blue-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <path d="M12 20l9-5-9-5-9 5 9 5z" />
+      <path d="M12 12V4" />
+    </svg>
+    NGS GPT
+  </div>
+  <div id="chat-window" class="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+    <!-- Chat messages will appear here -->
+  </div>
+  <form id="chat-form" class="flex p-4 border-t bg-white">
+    <input
+            id="user-input"
+            type="text"
+            class="flex-1 border rounded-l px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            placeholder="Type your message..."
+            autocomplete="off"
+            required
+    />
+    <button
+            type="submit"
+            class="bg-blue-500 text-white px-6 py-2 rounded-r hover:bg-blue-600 transition"
+    >
+      Send
+    </button>
+  </form>
+</div>
+
+<script>
+  const chatWindow = document.getElementById('chat-window');
+  const chatForm = document.getElementById('chat-form');
+  const userInput = document.getElementById('user-input');
+
+  function addMessage(content, sender) {
+    const msgDiv = document.createElement('div');
+    msgDiv.className = sender === 'user'
+      ? 'flex justify-end'
+      : 'flex justify-start';
+    msgDiv.innerHTML = `
+      <div class="max-w-xs px-4 py-2 rounded-lg shadow ${
+        sender === 'user'
+          ? 'bg-blue-500 text-white'
+          : 'bg-gray-200 text-gray-800'
+      }">
+        ${content}
+      </div>
+    `;
+    chatWindow.appendChild(msgDiv);
+    chatWindow.scrollTop = chatWindow.scrollHeight;
+  }
+
+  chatForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const prompt = userInput.value.trim();
+    if (!prompt) return;
+    addMessage(prompt, 'user');
+    userInput.value = '';
+    addMessage('...', 'bot'); // Loading indicator
+
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: prompt
+      });
+      const data = await response.text();
+      // Remove loading indicator
+      chatWindow.removeChild(chatWindow.lastChild);
+      addMessage(data, 'bot');
+    } catch (err) {
+      chatWindow.removeChild(chatWindow.lastChild);
+      addMessage('Error: Could not get response.', 'bot');
+    }
+  });
+</script>
+</body>
+</html>
